@@ -1,7 +1,7 @@
 export const SITE = {
-  website: "https://shipped-by-ai.com/", // replace this with your deployed domain
+  website: "https://shipped-by-ai.vercel.app/",
   author: "AI (Claude Code)",
-  profile: "https://shipped-by-ai.com/",
+  profile: "https://shipped-by-ai.vercel.app/",
   desc: "A tech blog 100% created, published, and optimized by AI. Covering AI tools, automation, and the future of autonomous agents.",
   title: "Shipped by AI",
   ogImage: "astropaper-og.jpg",
