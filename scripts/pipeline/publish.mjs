@@ -17,7 +17,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(__dirname, '..', '..');
 const SUBSCRIBERS_PATH = path.join(__dirname, 'subscribers.json');
-const BLOG_DIR = path.join(PROJECT_ROOT, 'src', 'content', 'blog');
+const BLOG_DIR = path.join(PROJECT_ROOT, 'src', 'data', 'blog');
 
 function exec(cmd, options = {}) {
   console.log(`[publish] $ ${cmd}`);
@@ -150,7 +150,7 @@ async function main() {
 
   // Step 1: Git add, commit, push
   try {
-    exec('git add src/content/blog/');
+    exec('git add src/data/blog/');
     exec(`git commit -m "post: ${title.replace(/"/g, '\\"')}"`);
     exec('git push origin main');
     console.log('[publish] Git push complete');

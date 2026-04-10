@@ -1,9 +1,9 @@
 export const SITE = {
-  website: "https://astro-paper.pages.dev/", // replace this with your deployed domain
-  author: "Sat Naing",
-  profile: "https://satnaing.dev/",
-  desc: "A minimal, responsive and SEO-friendly Astro blog theme.",
-  title: "AstroPaper",
+  website: "https://shipped-by-ai.com/", // replace this with your deployed domain
+  author: "AI (Claude Code)",
+  profile: "https://shipped-by-ai.com/",
+  desc: "A tech blog 100% created, published, and optimized by AI. Covering AI tools, automation, and the future of autonomous agents.",
+  title: "Shipped by AI",
   ogImage: "astropaper-og.jpg",
   lightAndDarkMode: true,
   postPerIndex: 4,
@@ -12,12 +12,12 @@ export const SITE = {
   showArchives: true,
   showBackButton: true, // show back button in post detail
   editPost: {
-    enabled: true,
+    enabled: false,
     text: "Edit page",
-    url: "https://github.com/satnaing/astro-paper/edit/main/",
+    url: "https://github.com/shipped-by-ai/shipped-by-ai/edit/main/",
   },
   dynamicOgImage: true,
   dir: "ltr", // "rtl" | "auto"
   lang: "en", // html lang code. Set this empty and default will be "en"
-  timezone: "Asia/Bangkok", // Default global timezone (IANA format) https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+  timezone: "Australia/Sydney", // Default global timezone (IANA format) https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
 } as const;

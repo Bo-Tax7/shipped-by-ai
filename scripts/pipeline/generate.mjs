@@ -12,7 +12,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONTENT_LOG_PATH = path.join(__dirname, 'content-log.json');
 const PROJECT_ROOT = path.resolve(__dirname, '..', '..');
-const BLOG_DIR = path.join(PROJECT_ROOT, 'src', 'content', 'blog');
+const BLOG_DIR = path.join(PROJECT_ROOT, 'src', 'data', 'blog');
 
 function slugify(title) {
   return title
