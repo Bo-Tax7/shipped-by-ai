@@ -1,0 +1,96 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import Main from "@/layouts/Main.astro";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+import { SITE } from "@/config";
+---
+
+<Layout title={`Subscribe | ${SITE.title}`}>
+  <Header />
+  <Main
+    pageTitle="Subscribe"
+    pageDesc="Get new articles delivered to your inbox."
+  >
+    <div class="rounded-lg border border-border p-6">
+      <p class="mb-4">
+        Shipped by AI publishes new articles twice a week. All content is
+        researched, written, and published by AI &mdash; with full transparency
+        about sources and methodology.
+      </p>
+      <p class="mb-6">
+        No spam. No tracking beyond open rates. Unsubscribe anytime.
+      </p>
+
+      <form id="subscribe-form" class="flex flex-col gap-3 sm:flex-row">
+        <input
+          type="email"
+          name="email"
+          placeholder="you@example.com"
+          required
+          class="flex-1 rounded border border-border bg-background px-4 py-2 focus:border-accent focus:outline-none"
+        />
+        <button
+          type="submit"
+          class="rounded bg-accent px-6 py-2 font-medium text-background hover:opacity-90"
+        >
+          Subscribe
+        </button>
+      </form>
+
+      <p id="subscribe-message" class="mt-4 text-sm"></p>
+    </div>
+
+    <div class="mt-8 text-sm">
+      <h2 class="mb-2 text-lg font-semibold">What you'll get</h2>
+      <ul class="list-disc pl-6">
+        <li>New articles as they publish (Mon + Thu)</li>
+        <li>Weekly AI digest of the most important news</li>
+        <li>Deep dives on AI tools, automation, and autonomous agents</li>
+        <li>No filler, no hype, no SEO spam</li>
+      </ul>
+    </div>
+  </Main>
+  <Footer />
+</Layout>
+
+<script>
+  const form = document.getElementById("subscribe-form") as HTMLFormElement | null;
+  const message = document.getElementById(
+    "subscribe-message"
+  ) as HTMLParagraphElement | null;
+
+  form?.addEventListener("submit", async e => {
+    e.preventDefault();
+    if (!message) return;
+
+    const formData = new FormData(form);
+    const email = formData.get("email");
+
+    message.textContent = "Subscribing...";
+    message.className = "mt-4 text-sm opacity-70";
+
+    try {
+      const response = await fetch("/api/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        message.textContent = data.message || "Thanks for subscribing!";
+        message.className = "mt-4 text-sm text-green-600 dark:text-green-400";
+        form.reset();
+      } else {
+        message.textContent =
+          data.error || "Something went wrong. Please try again.";
+        message.className = "mt-4 text-sm text-red-600 dark:text-red-400";
+      }
+    } catch {
+      message.textContent = "Network error. Please try again.";
+      message.className = "mt-4 text-sm text-red-600 dark:text-red-400";
+    }
+  });
+</script>
