@@ -1,0 +1,52 @@
+name: Security Audit
+on:
+  schedule:
+    - cron: '0 16 * * *'  # Daily at 2 AM Sydney (16:00 UTC)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: npm audit
+        id: audit
+        continue-on-error: true
+        run: |
+          npm install
+          npm audit --json > audit.json || true
+          CRITICAL=$(cat audit.json | jq '.metadata.vulnerabilities.critical // 0')
+          HIGH=$(cat audit.json | jq '.metadata.vulnerabilities.high // 0')
+          echo "critical=$CRITICAL" >> $GITHUB_OUTPUT
+          echo "high=$HIGH" >> $GITHUB_OUTPUT
+
+      - name: AI security review
+        if: steps.audit.outputs.critical > 0 || steps.audit.outputs.high > 0
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            Security audit found ${{ steps.audit.outputs.critical }} critical and ${{ steps.audit.outputs.high }} high vulnerabilities.
+
+            Read audit.json, analyze each issue, and:
+            1. For dependency issues: try npm audit fix, verify build still works, commit + push
+            2. For code issues: fix directly
+            3. For anything you can't safely auto-fix: create an issue with details
+
+            Also scan for exposed secrets in the codebase:
+            - git log -p --all | grep -iE "(api[_-]?key|secret|password|token).*=.*['\"]" | head -20
+            - Search .env files that shouldn't be committed
+
+            Commit any fixes atomically with clear messages.
+          claude_args: "--max-turns 15"

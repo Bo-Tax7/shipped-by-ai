@@ -1,0 +1,58 @@
+name: Health Check
+on:
+  schedule:
+    - cron: '*/15 * * * *'  # Every 15 minutes
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check homepage
+        id: home
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://shipped-by-ai.vercel.app/)
+          echo "status=$STATUS" >> $GITHUB_OUTPUT
+          if [ "$STATUS" != "200" ]; then
+            echo "Homepage returned $STATUS"
+            exit 1
+          fi
+
+      - name: Check posts page
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://shipped-by-ai.vercel.app/posts/)
+          if [ "$STATUS" != "200" ]; then
+            echo "Posts page returned $STATUS"
+            exit 1
+          fi
+
+      - name: Check RSS
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://shipped-by-ai.vercel.app/rss.xml)
+          if [ "$STATUS" != "200" ]; then
+            echo "RSS returned $STATUS"
+            exit 1
+          fi
+
+      - name: Create issue on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = `Health check failed at ${new Date().toISOString()}`;
+            const existing = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'health-check-failed'
+            });
+            if (existing.data.length === 0) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body: 'Automated health check failed. See workflow logs.',
+                labels: ['health-check-failed', 'automated', 'critical']
+              });
+            }

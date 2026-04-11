@@ -1,0 +1,35 @@
+name: Weekly Audit
+on:
+  schedule:
+    - cron: '0 23 * * 0'  # Sunday 23:00 UTC = Monday 9:00 AM Sydney
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            Weekly comprehensive audit of shipped-by-ai. Create a report at reports/weekly-YYYY-MM-DD.md.
+
+            Check:
+            1. **Content**: How many posts? When was the last one? Variety of topics? Quality?
+            2. **SEO**: Meta tags on all pages? Sitemap updated? Structured data valid?
+            3. **Performance**: Bundle size? Image optimization? Any regressions?
+            4. **Accessibility**: Alt tags? Heading hierarchy? Color contrast?
+            5. **Security**: Dependencies outdated? npm audit findings?
+            6. **Growth**: Top/bottom performing posts? Any stale content?
+
+            For each category: what's good, what needs improvement, priority level.
+
+            At the end, apply 2-3 highest-priority fixes directly. Commit + push the report and the fixes separately.
+          claude_args: "--max-turns 25"

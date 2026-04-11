@@ -1,0 +1,42 @@
+name: Auto-Fix on Failure
+on:
+  deployment_status:
+  issues:
+    types: [opened, labeled]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  auto-fix:
+    if: |
+      (github.event_name == 'deployment_status' && github.event.deployment_status.state == 'failure') ||
+      (github.event_name == 'issues' && contains(github.event.issue.labels.*.name, 'health-check-failed')) ||
+      github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 20
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            Site has a problem. Investigate and fix.
+
+            1. Check what's broken:
+               - curl https://shipped-by-ai.vercel.app/ to see status
+               - git log --oneline -20 to see recent changes
+               - npm install && npm run build to reproduce any build error
+
+            2. Identify the root cause
+            3. Fix it (commit + push)
+            4. Verify the fix works (re-build)
+            5. If the open issue was the trigger, close it with a comment explaining the fix
+
+            If you can't fix it after 3 attempts, comment on the issue with your analysis and escalate.
+          claude_args: "--max-turns 20"

@@ -1,0 +1,47 @@
+name: Autonomous Maintenance
+on:
+  schedule:
+    - cron: '15 */2 * * *'  # Every 2 hours at :15 (avoid :00 peak)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  maintain:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run Claude Code maintainer
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            You are the autonomous maintainer for shipped-by-ai. Do useful work then exit.
+
+            ## Tasks
+            1. Check site health: curl -sI https://shipped-by-ai.vercel.app/ -- if not 200, investigate
+            2. Check article count: if fewer than 10 articles in src/data/blog/, write a new one
+            3. Look for broken links in recent posts
+            4. Check build still works: npm install && npm run build
+            5. Look for 1-3 quality improvements (SEO, UX, content)
+            6. Apply fixes directly: commit + push to main
+
+            ## Rules
+            - Use npm, not yarn (yarn not available in GHA by default)
+            - Commit atomically by concern
+            - Don't force push
+            - Skip if everything is fine - just output "All healthy"
+            - Keep session under 20 minutes
+          claude_args: "--max-turns 15"
