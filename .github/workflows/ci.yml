@@ -1,50 +1,58 @@
-name: CI
+name: CI - Build Gate
 
 permissions:
   contents: read
 
 on:
+  push:
+    branches: [main]
   pull_request:
-    types:
-      - opened
-      - edited
-      - synchronize
-      - reopened
-  workflow_call:
+    branches: [main]
 
 jobs:
   build:
     name: Code standards & build
     runs-on: ubuntu-latest
-    timeout-minutes: 3
-
-    strategy:
-      matrix:
-        node-version: [20]
+    timeout-minutes: 5
 
     steps:
-      - name: "☁️ Checkout repository"
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: "📦 Install pnpm"
+      - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 10.11.1
 
-      - name: Use Node.js ${{ matrix.node-version }}
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: "20"
           cache: "pnpm"
 
-      - name: "📦 Install dependencies"
+      - name: Install dependencies
         run: pnpm install
 
-      - name: "🔎 Lint code"
+      - name: Lint code
         run: pnpm run lint
 
-      - name: "📝 Checking code format"
+      - name: Check code format
         run: pnpm run format:check
 
-      - name: "🚀 Build the project"
+      - name: Build site
         run: pnpm run build
+
+      - name: Verify posts exist
+        run: |
+          POST_COUNT=$(find dist -path "*/posts/*" -name "index.html" ! -path "*/posts/index.html" | wc -l)
+          echo "Found $POST_COUNT posts"
+          if [ "$POST_COUNT" -lt 1 ]; then
+            echo "ERROR: No posts found in build output!"
+            exit 1
+          fi
+
+      - name: Verify RSS feed
+        run: |
+          if [ ! -f dist/rss.xml ]; then
+            echo "ERROR: RSS feed not generated!"
+            exit 1
+          fi
