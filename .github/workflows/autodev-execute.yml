@@ -81,12 +81,19 @@ jobs:
           echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
 
       - name: Callback to CRM-Backend
-        # TODO v0.2: sign this PATCH with SHARED_SERVICE_SECRET using HMAC-SHA256
-        # (same scheme as /api/autodev/signals/myledger). For v0.1 we only log
-        # the intended callback so the pipeline can be smoke-tested end-to-end
-        # without wiring the secret into this repo yet.
+        # Signs the PATCH with SHARED_SERVICE_SECRET using HMAC-SHA256.
+        # Must match CRM-Backend/src/utils/hmacAuth.ts verifyRequest():
+        #   message   = "<METHOD>\n<PATH>\n<TIMESTAMP>\n<NONCE>\n<BODY_HASH>"
+        #   BODY_HASH = sha256 hex of the raw body bytes (or sha256('') if no body)
+        #   signature = hex(hmac-sha256(secret, message))
+        # Headers:
+        #   X-Internal-Service-Auth: HMAC-SHA256 <signature>
+        #   X-Request-Timestamp:     <unix-ms>
+        #   X-Request-Nonce:         <uuid>
+        # Timestamp tolerance is 30s — callback must run promptly.
         if: always()
         env:
+          SHARED_SERVICE_SECRET: ${{ secrets.SHARED_SERVICE_SECRET }}
           CALLBACK_URL: ${{ github.event.client_payload.callback_url }}
           REQUEST_ID: ${{ github.event.client_payload.request_id }}
           PR_URL: ${{ steps.pr.outputs.pr_url }}
@@ -95,25 +102,76 @@ jobs:
           RUN_ID: ${{ github.run_id }}
           JOB_STATUS: ${{ job.status }}
         run: |
-          if [ "$JOB_STATUS" = "success" ]; then
+          set -eu
+
+          if [ "$JOB_STATUS" = "success" ] && [ -n "${PR_URL:-}" ]; then
             STATUS="pr_opened"
           else
             STATUS="failed"
           fi
 
-          echo "AutoDev request #${REQUEST_ID}"
+          if [ -z "${SHARED_SERVICE_SECRET:-}" ] || [ -z "${CALLBACK_URL:-}" ]; then
+            echo "Skipping callback: missing SHARED_SERVICE_SECRET or callback_url"
+            echo "  request_id: ${REQUEST_ID}"
+            echo "  status:     ${STATUS}"
+            echo "  pr_url:     ${PR_URL:-<none>}"
+            exit 0
+          fi
+
+          # Build the JSON body — must be the exact string we sign AND send.
+          BODY=$(jq -n -c \
+            --arg status "$STATUS" \
+            --arg workflowRunId "$RUN_ID" \
+            --arg workflowRunUrl "$RUN_URL" \
+            --arg pullRequestUrl "${PR_URL:-}" \
+            --arg pullRequestNumber "${PR_NUMBER:-}" \
+            '{
+              status: $status,
+              workflowRunId: $workflowRunId,
+              workflowRunUrl: $workflowRunUrl
+            }
+            + (if $pullRequestUrl == "" then {} else {pullRequestUrl: $pullRequestUrl} end)
+            + (if $pullRequestNumber == "" then {} else {pullRequestNumber: ($pullRequestNumber | tonumber)} end)')
+
+          # Extract URL path (including query string) from the callback URL.
+          URL_PATH=$(printf '%s' "$CALLBACK_URL" | sed -E 's|^https?://[^/]+||')
+          if [ -z "$URL_PATH" ]; then
+            URL_PATH="/"
+          fi
+
+          METHOD="PATCH"
+          TIMESTAMP=$(node -e 'process.stdout.write(Date.now().toString())')
+          NONCE=$(node -e 'process.stdout.write(require("crypto").randomUUID())')
+
+          # BODY_HASH = sha256 hex of the raw body bytes. Matches hashBody() in
+          # CRM-Backend/src/utils/hmacAuth.ts (empty/null/'{}' all hash as sha256('')).
+          BODY_HASH=$(printf '%s' "$BODY" | openssl dgst -sha256 -hex | awk '{print $NF}')
+
+          # Signed message — newline-separated, no trailing newline.
+          MESSAGE=$(printf '%s\n%s\n%s\n%s\n%s' "$METHOD" "$URL_PATH" "$TIMESTAMP" "$NONCE" "$BODY_HASH")
+          SIGNATURE=$(printf '%s' "$MESSAGE" | openssl dgst -sha256 -hmac "$SHARED_SERVICE_SECRET" -hex | awk '{print $NF}')
+
+          echo "AutoDev callback request #${REQUEST_ID}"
+          echo "  method:       ${METHOD}"
+          echo "  path:         ${URL_PATH}"
           echo "  status:       ${STATUS}"
-          echo "  workflow run: ${RUN_URL}"
-          echo "  pull request: ${PR_URL:-<not created>}"
-          echo "  callback url: ${CALLBACK_URL:-<not provided>}"
-          echo ""
-          echo "TODO v0.2: PATCH ${CALLBACK_URL} with HMAC-signed body:"
-          cat <<EOF
-          {
-            "status": "${STATUS}",
-            "workflowRunId": "${RUN_ID}",
-            "workflowRunUrl": "${RUN_URL}",
-            "pullRequestUrl": "${PR_URL}",
-            "pullRequestNumber": ${PR_NUMBER:-null}
-          }
-          EOF
+          echo "  timestamp:    ${TIMESTAMP}"
+          echo "  pr_url:       ${PR_URL:-<none>}"
+
+          HTTP_CODE=$(curl -sS -o /tmp/callback-response.txt -w "%{http_code}" \
+            -X "$METHOD" "$CALLBACK_URL" \
+            -H "Content-Type: application/json" \
+            -H "X-Internal-Service-Auth: HMAC-SHA256 ${SIGNATURE}" \
+            -H "X-Request-Timestamp: ${TIMESTAMP}" \
+            -H "X-Request-Nonce: ${NONCE}" \
+            --data-binary "$BODY" || echo "000")
+
+          echo "  http_status:  ${HTTP_CODE}"
+          echo "  response:"
+          sed 's/^/    /' /tmp/callback-response.txt || true
+
+          # Don't fail the workflow just because the callback failed — the PR
+          # is already open and humans can reconcile state manually.
+          if [ "$HTTP_CODE" != "200" ] && [ "$HTTP_CODE" != "204" ]; then
+            echo "Callback returned non-2xx (${HTTP_CODE}); continuing without failing the workflow."
+          fi
