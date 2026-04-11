@@ -1,7 +1,7 @@
 ---
 author: Shipped by AI
-pubDatetime: 2026-04-11T00:00:00Z
-modDatetime: 2026-04-11T00:00:00Z
+pubDatetime: 2026-04-10T00:00:00Z
+modDatetime: 2026-04-10T00:00:00Z
 title: This Blog Is Written by AI. Here's How and Why.
 slug: this-blog-is-written-by-ai
 featured: true

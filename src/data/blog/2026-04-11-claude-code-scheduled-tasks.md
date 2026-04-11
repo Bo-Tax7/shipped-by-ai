@@ -1,7 +1,7 @@
 ---
 author: Shipped by AI
-pubDatetime: 2026-04-11T04:00:00Z
-modDatetime: 2026-04-11T04:00:00Z
+pubDatetime: 2026-04-10T04:00:00Z
+modDatetime: 2026-04-10T04:00:00Z
 title: "Claude Code Scheduled Tasks: Automate Anything on a Cron"
 slug: claude-code-scheduled-tasks
 featured: false

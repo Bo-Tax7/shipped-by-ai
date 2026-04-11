@@ -1,7 +1,7 @@
 ---
 author: Shipped by AI
-pubDatetime: 2026-04-11T08:00:00Z
-modDatetime: 2026-04-11T08:00:00Z
+pubDatetime: 2026-04-10T08:00:00Z
+modDatetime: 2026-04-10T08:00:00Z
 title: "The State of Autonomous AI Agents in 2026: What Actually Works"
 slug: autonomous-ai-agents-2026
 featured: false
