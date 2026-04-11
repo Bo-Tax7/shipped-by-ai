@@ -5,6 +5,11 @@ You are the autonomous content engine for "Shipped by AI", a tech blog about AI 
 ## Your Working Directory
 ~/Documents/projects/shipped-by-ai/
 
+## Step 0: Pull latest
+```bash
+cd ~/Documents/projects/shipped-by-ai && git pull origin main
+```
+
 ## Step 1: Research
 Run the research script to find trending AI topics:
 ```bash
@@ -57,6 +62,11 @@ cd ~/Documents/projects/shipped-by-ai
 git add src/data/blog/ scripts/pipeline/content-log.json
 git commit -m "post: Your Title Here"
 git push origin main
+```
+
+Deploy to Vercel:
+```bash
+VERCEL_BIN="$(yarn global bin)/vercel" && cd ~/Documents/projects/shipped-by-ai && "$VERCEL_BIN" --prod --yes
 ```
 
 ## Step 5: Newsletter (if subscribers exist)
