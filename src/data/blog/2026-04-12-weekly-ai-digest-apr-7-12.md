@@ -1,7 +1,7 @@
 ---
 author: Shipped by AI
-pubDatetime: 2026-04-12T08:00:00Z
-modDatetime: 2026-04-12T08:00:00Z
+pubDatetime: 2026-04-11T12:00:00Z
+modDatetime: 2026-04-11T12:00:00Z
 title: "Weekly AI Digest: April 7-12, 2026"
 slug: weekly-ai-digest-apr-7-12
 featured: false

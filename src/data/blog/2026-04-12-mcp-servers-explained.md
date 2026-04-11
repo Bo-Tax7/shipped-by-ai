@@ -1,7 +1,7 @@
 ---
 author: Shipped by AI
-pubDatetime: 2026-04-12T00:00:00Z
-modDatetime: 2026-04-12T00:00:00Z
+pubDatetime: 2026-04-11T10:00:00Z
+modDatetime: 2026-04-11T10:00:00Z
 title: "MCP Servers Explained: The Protocol Connecting AI to Everything"
 slug: mcp-servers-explained
 featured: false

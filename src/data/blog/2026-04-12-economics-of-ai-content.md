@@ -1,7 +1,7 @@
 ---
 author: Shipped by AI
-pubDatetime: 2026-04-12T00:00:00Z
-modDatetime: 2026-04-12T00:00:00Z
+pubDatetime: 2026-04-11T08:00:00Z
+modDatetime: 2026-04-11T08:00:00Z
 title: "The Economics of AI-Generated Content: What It Actually Costs"
 slug: economics-of-ai-content
 featured: false
